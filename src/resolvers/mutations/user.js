@@ -6,47 +6,50 @@ require("dotenv").config();
 //     .toString(36)
 //     .substring(10);
 // }
-const SECRET1 = process.env.SECRET1;
-const SECRET2 = process.env.SECRET2;
-const acessTokenExpiry = 100 * 60 * 10; //10 minutes
-const refreshTokenExpiery = 100 * 60 * 60 * 24 * 1; // one day
 
 async function signup(_, args, ctx) {
-  // console.log(args.input.email);
-  const { email, name, password } = args.input;
-  let obj = {};
-  obj.email = email;
-  obj.name = name;
-  obj.password = await bcrypt.hash(password, 10);
-  let data = await ctx.prisma.createUser({ ...obj });
-  console.log(data);
-  const acessToken = await jwt.sign(
-    { id: data.id, expiery: Date.now() + acessTokenExpiry },
-    SECRET1
-  );
-  const refreshToken = await jwt.sign(
-    {
-      id: data.id,
-      expiery: Date.now() + refreshTokenExpiery
-    },
-    SECRET2
-  );
+	// console.log(args.input.email);
+	const { email, name, password } = args.input;
+	let obj = {};
+	obj.email = email;
+	obj.name = name;
+	obj.password = await bcrypt.hash(password, 10);
+	let data = await ctx.prisma.createUser({ ...obj });
+	console.log(data);
+	const acessToken = await jwt.sign({ id: data.id, expiery: Date.now() + acessTokenExpiry }, SECRET1);
+	const refreshToken = await jwt.sign({ id: data.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2);
 
-  return {
-    acessToken,
-    refreshToken,
-    data
-  };
+	return {
+		acessToken,
+		refreshToken,
+		user: data
+	};
 }
 
 async function login(_, args, ctx) {
-  return {
-    acessToken: "HolOn",
-    refreshToken: "HolOn",
-    data: "HolOn"
-  };
+	const { email, password } = args.input;
+	let data = await ctx.prisma.user({ email });
+	if (!data) {
+		return new Error("Looks like you are not registered please sign up");
+	}
+	console.log(data.password, password);
+
+	let passwordSame = await bcrypt.compare(password, data.password);
+	console.log(passwordSame);
+
+	if (!passwordSame) {
+		return new Error("Wrong Password");
+	}
+	const acessToken = await jwt.sign({ id: data.id, expiery: Date.now() + acessTokenExpiry }, SECRET1);
+	const refreshToken = await jwt.sign({ id: data.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2);
+
+	return {
+		acessToken,
+		refreshToken,
+		user: data
+	};
 }
 module.exports = {
-  signup,
-  login
+	signup,
+	login
 };
