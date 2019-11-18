@@ -1,55 +1,73 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
-// function getRandomString() {
-//   return Math.random()
-//     .toString(36)
-//     .substring(10);
-// }
+const bcrypt = require("bcryptjs")
+const {
+	isRefreshTokenExpired,
+	createAccessTokenFromRefreshToken,
+	createAccessToken,
+	createRefreshToken
+} = require("../../utils")
+require("dotenv").config()
 
 async function signup(_, args, ctx) {
 	// console.log(args.input.email);
-	const { email, name, password } = args.input;
-	let obj = {};
-	obj.email = email;
-	obj.name = name;
-	obj.password = await bcrypt.hash(password, 10);
-	let data = await ctx.prisma.createUser({ ...obj });
-	console.log(data);
-	const acessToken = await jwt.sign({ id: data.id, expiery: Date.now() + acessTokenExpiry }, SECRET1);
-	const refreshToken = await jwt.sign({ id: data.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2);
+	const { email, name, password } = args.input
+	let obj = {}
+	obj.email = email
+	obj.name = name
+	obj.password = await bcrypt.hash(password, 10)
+	let data = await ctx.prisma.createUser({ ...obj })
+	const accessToken = createAccessToken(data.id)
+	const refreshToken = createRefreshToken(data.id)
 
 	return {
-		acessToken,
+		accessToken,
 		refreshToken,
 		user: data
-	};
+	}
 }
 
 async function login(_, args, ctx) {
-	const { email, password } = args.input;
-	let data = await ctx.prisma.user({ email });
+	const { email, password } = args.input
+	let data = await ctx.prisma.user({ email })
 	if (!data) {
-		return new Error("Looks like you are not registered please sign up");
+		return new Error("Looks like you are not registered please sign up")
 	}
-	console.log(data.password, password);
-
-	let passwordSame = await bcrypt.compare(password, data.password);
-	console.log(passwordSame);
-
+	let passwordSame = await bcrypt.compare(password, data.password)
+	// console.log(passwordSame)
 	if (!passwordSame) {
-		return new Error("Wrong Password");
+		return new Error("Wrong Password")
 	}
-	const acessToken = await jwt.sign({ id: data.id, expiery: Date.now() + acessTokenExpiry }, SECRET1);
-	const refreshToken = await jwt.sign({ id: data.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2);
+	console.log(data.id)
+	const accessToken = createAccessToken(data.id)
+	const refreshToken = createRefreshToken(data.id)
+	// const accessToken = jwt.sign({ id: data.id, expiery: Date.now() + accessTokenExpiry }, SECRET1)
+	// const refreshToken = jwt.sign({ id: data.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
 
 	return {
-		acessToken,
+		accessToken,
 		refreshToken,
 		user: data
-	};
+	}
+}
+
+async function askForNewTokens(_, args, ctx) {
+	const { input } = args
+	console.log(input)
+
+	// const { isRefreshTokenExpired, createAccessTokenFromRefreshToken } = utils
+	let data = isRefreshTokenExpired(input)
+	if (data.expired) {
+		throw new Error("acess Token Expired Login Again")
+	} else {
+		let newTokens = await createAccessTokenFromRefreshToken(input)
+		console.log(4, newTokens)
+		return {
+			accessToken: newTokens.accessToken,
+			refreshToken: newTokens.refreshToken
+		}
+	}
 }
 module.exports = {
 	signup,
-	login
-};
+	login,
+	askForNewTokens
+}

@@ -1,32 +1,37 @@
 type Query {
-  user: User
+	user: User
 }
 
 type Mutation {
-  signup(input: SignupInput): Token
-  login(input: LoginInput): Token
+	signup(input: SignupInput): Token
+	login(input: LoginInput): Token
+	askForNewTokens(input: String!): Token
 }
 
 input SignupInput {
-  email: String!
-  password: String!
-  name: String
+	email: String!
+	password: String!
+	name: String
 }
 
 input LoginInput {
-  email: String!
-  password: String!
-  refreshToken: String
+	email: String!
+	password: String!
 }
 
 type Token {
-  acessToken: String!
-  refreshToken: String!
-  user: User!
+	accessToken: String!
+	refreshToken: String!
+	user: User
+}
+
+type AuthData {
+	askFornewToken: Boolean!
+	accessTokenExpired: Boolean!
 }
 
 type User {
-  id: ID!
-  name: String
-  email: String!
+	id: ID!
+	name: String
+	email: String!
 }
