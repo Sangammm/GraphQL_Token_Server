@@ -2,9 +2,9 @@ const jwt = require("jsonwebtoken")
 require("dotenv").config()
 const SECRET1 = process.env.SECRET1
 const SECRET2 = process.env.SECRET2
-const accessTokenExpiry = 100 * 60 * 20 //20 minutes
-const refreshTokenExpiery = 100 * 60 * 60 * 24 * 1 // one day
-const accessTokenBefore = 100 * 60 * 5
+const accessTokenExpiry = 1000 * 60 * 10 //20 minutes
+const refreshTokenExpiery = 1000 * 60 * 60 * 24 * 1 // one day
+const accessTokenBefore = 1000 * 60 * 5
 
 function createRefreshToken(id) {
 	return jwt.sign({ id: id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
@@ -15,38 +15,43 @@ function createAccessToken(id) {
 }
 
 function isAccessTokenExpired(token, secretKey = SECRET1) {
-	let Token = jwt.verify(token, secretKey)
-	if (Token.expiery > Date.now()) {
-		return {
-			id: Token.id,
-			expired: true,
-			sendNew: false
-		}
-	} else {
-		if (Token.expiery + accessTokenBefore > Date.now()) {
+	try {
+		let Token = jwt.verify(token, secretKey)
+		console.log(new Date(Token.expiery).toLocaleString())
+		if (Token.expiery < Date.now()) {
 			return {
 				id: Token.id,
-				expired: false,
+				expired: true,
 				sendNew: true
 			}
 		} else {
-			return {
-				id: Token.id,
-				expired: false,
-				sendNew: false
+			if (Token.expiery < Date.now() + accessTokenBefore) {
+				return {
+					id: Token.id,
+					expired: false,
+					sendNew: true
+				}
+			} else {
+				return {
+					id: Token.id,
+					expired: false,
+					sendNew: false
+				}
 			}
 		}
+	} catch (err) {
+		console.log(err)
 	}
 }
 
-async function createAccessTokenFromRefreshToken(token) {
-	let Token = await jwt.verify(token, SECRET2)
-	return { accessToken: await createAccessToken(Token.id), refreshToken: await createRefreshToken(Token.id) }
+function createAccessTokenFromRefreshToken(token) {
+	let Token = jwt.verify(token, SECRET2)
+	return { accessToken: createAccessToken(Token.id), refreshToken: createRefreshToken(Token.id) }
 }
 
-async function isRefreshTokenExpired(token) {
+function isRefreshTokenExpired(token) {
 	let Token = jwt.verify(token, SECRET2)
-	if (Token.expiery > Date.now()) {
+	if (Token.expiery < Date.now()) {
 		return {
 			id: Token.id,
 			expired: true
@@ -59,13 +64,15 @@ async function isRefreshTokenExpired(token) {
 	}
 }
 
-async function validateReq(context) {
-	let accessTokenArg = context.request.get("Authorization")
+function validateReq(context) {
+	let accessTokenArg = context.request.get("accessToken")
 	let accessToken = isAccessTokenExpired(accessTokenArg)
+	console.log(11, accessToken)
 	if (accessToken.expired) {
-		return new Error("Token expired")
+		// return accessToken
+		throw new Error("Token expired")
 	} else {
-		return accessToken.id
+		return accessToken
 	}
 }
 module.exports = {

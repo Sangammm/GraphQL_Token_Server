@@ -26,6 +26,7 @@ async function signup(_, args, ctx) {
 }
 
 async function login(_, args, ctx) {
+	console.log(args.input)
 	const { email, password } = args.input
 	let data = await ctx.prisma.user({ email })
 	if (!data) {
@@ -51,15 +52,13 @@ async function login(_, args, ctx) {
 
 async function askForNewTokens(_, args, ctx) {
 	const { input } = args
-	console.log(input)
-
 	// const { isRefreshTokenExpired, createAccessTokenFromRefreshToken } = utils
 	let data = isRefreshTokenExpired(input)
 	if (data.expired) {
-		throw new Error("acess Token Expired Login Again")
+		return new Error("acess Token Expired Login Again")
 	} else {
 		let newTokens = await createAccessTokenFromRefreshToken(input)
-		console.log(4, newTokens)
+		// console.log(4, newTokens)
 		return {
 			accessToken: newTokens.accessToken,
 			refreshToken: newTokens.refreshToken

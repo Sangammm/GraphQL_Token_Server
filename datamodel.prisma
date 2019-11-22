@@ -3,4 +3,13 @@ type User {
   name: String,
   email: String! @unique,
   password: String!,
+  createdAt: DateTime! @createdAt,
+  updatedAt: DateTime! @updatedAt,
+}
+
+type Randoms {
+  id: ID! @id,
+  userId: ID!,
+  valid: Boolean,
+  createdAt: DateTime! @createdAt,
 }
