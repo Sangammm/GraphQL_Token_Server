@@ -6,12 +6,23 @@ const accessTokenExpiry = 1000 * 60 * 10 //20 minutes
 const refreshTokenExpiery = 1000 * 60 * 60 * 24 * 1 // one day
 const accessTokenBefore = 1000 * 60 * 5
 
-function createRefreshToken(id) {
-	return jwt.sign({ id: id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
+async function createRefreshToken(ctx, id) {
+	try {
+		await ctx.prisma.updateManyTokens({ data: { deleted: true }, where: { userId: id, deleted: false } })
+		let Obj = await ctx.prisma.createToken({ userId: id })
+		console.log("OBJ", Obj)
+		return jwt.sign({ id: Obj.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
+	} catch (err) {
+		console.warn(err)
+	}
 }
 
 function createAccessToken(id) {
-	return jwt.sign({ id, expiery: Date.now() + accessTokenExpiry }, SECRET1)
+	try {
+		return jwt.sign({ id, expiery: Date.now() + accessTokenExpiry }, SECRET1)
+	} catch (err) {
+		console.warn(err)
+	}
 }
 
 function isAccessTokenExpired(token, secretKey = SECRET1) {
@@ -40,39 +51,51 @@ function isAccessTokenExpired(token, secretKey = SECRET1) {
 			}
 		}
 	} catch (err) {
-		console.log(err)
+		console.warn(err)
 	}
 }
 
-function createAccessTokenFromRefreshToken(token) {
-	let Token = jwt.verify(token, SECRET2)
-	return { accessToken: createAccessToken(Token.id), refreshToken: createRefreshToken(Token.id) }
+async function createAccessTokenFromRefreshToken(ctx, token) {
+	try {
+		let Token = jwt.verify(token, SECRET2)
+		return { accessToken: createAccessToken(Token.id), refreshToken: await createRefreshToken(ctx, Token.id) }
+	} catch (err) {
+		console.warn(err)
+	}
 }
 
 function isRefreshTokenExpired(token) {
-	let Token = jwt.verify(token, SECRET2)
-	if (Token.expiery < Date.now()) {
-		return {
-			id: Token.id,
-			expired: true
+	try {
+		let Token = jwt.verify(token, SECRET2)
+		if (Token.expiery < Date.now()) {
+			return {
+				id: Token.id,
+				expired: true
+			}
+		} else {
+			return {
+				id: Token.id,
+				expired: false
+			}
 		}
-	} else {
-		return {
-			id: Token.id,
-			expired: fasle
-		}
+	} catch (err) {
+		console.warn(err)
 	}
 }
 
 function validateReq(context) {
-	let accessTokenArg = context.request.get("accessToken")
-	let accessToken = isAccessTokenExpired(accessTokenArg)
-	console.log(11, accessToken)
-	if (accessToken.expired) {
-		// return accessToken
-		throw new Error("Token expired")
-	} else {
-		return accessToken
+	try {
+		let accessTokenArg = context.request.get("accessToken")
+		let accessToken = isAccessTokenExpired(accessTokenArg)
+		console.log(11, accessToken)
+		if (accessToken.expired) {
+			// return accessToken
+			throw new Error("Token expired")
+		} else {
+			return accessToken
+		}
+	} catch (err) {
+		console.warn(err)
 	}
 }
 module.exports = {

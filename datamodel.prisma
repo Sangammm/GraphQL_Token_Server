@@ -7,9 +7,9 @@ type User {
   updatedAt: DateTime! @updatedAt,
 }
 
-type Randoms {
+type Token {
   id: ID! @id,
   userId: ID!,
-  valid: Boolean,
+  deleted: Boolean! @default(value: false),
   createdAt: DateTime! @createdAt,
 }
