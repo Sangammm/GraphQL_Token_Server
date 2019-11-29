@@ -1,7 +1,6 @@
 .env*
 package-lock.json
 node_modules
-generated
 .vscode
 *.log
 *.lock
