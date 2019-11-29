@@ -1,7 +1,8 @@
-const { GraphQLServer } = require("graphql-yoga")
-const { prisma } = require("../generated/prisma-client")
+const { GraphQLServer } = require('graphql-yoga')
+const { prisma } = require('../generated/prisma-client')
+const fs = require('fs')
 // const { Mutation, Query } = require("./resolvers");
-const resolvers = require("./resolvers")
+const resolvers = require('./resolvers')
 // const resolvers = {
 //   Query: {
 //     user() {
@@ -21,17 +22,22 @@ const resolvers = require("./resolvers")
 // console.log(resolvers);
 
 const server = new GraphQLServer({
-	typeDefs: "./src/schema.graphql",
+	typeDefs: './src/schema.graphql',
 	resolvers,
 	context: request => ({
 		...request,
 		prisma
 	})
 })
+const httpsOptions = {
+	key: fs.readFileSync('./server.key'),
+	cert: fs.readFileSync('./server.cert')
+}
 
 server.start(
 	{
+		https: httpsOptions,
 		port: 4001
 	},
-	() => console.log("server started")
+	() => console.log('server started on port https://localhost:4001')
 )
