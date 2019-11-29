@@ -30,14 +30,14 @@ const server = new GraphQLServer({
 		prisma
 	})
 })
-const httpsOptions = {
-	key: fs.readFileSync('./server.key'),
-	cert: fs.readFileSync('./server.cert')
-}
+// const httpsOptions = {
+// 	key: fs.readFileSync('./server.key'),
+// 	cert: fs.readFileSync('./server.cert')
+// }
 
 server.start(
 	{
-		https: httpsOptions,
+		// https: httpsOptions,
 		port: process.env.PORT
 	},
 	() => console.log('server started on port https://localhost:4001')
