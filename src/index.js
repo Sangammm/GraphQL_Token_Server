@@ -1,6 +1,7 @@
 const { GraphQLServer } = require('graphql-yoga')
 const { prisma } = require('../generated/prisma-client')
 const fs = require('fs')
+require('dotenv').config()
 // const { Mutation, Query } = require("./resolvers");
 const resolvers = require('./resolvers')
 // const resolvers = {
@@ -37,7 +38,7 @@ const httpsOptions = {
 server.start(
 	{
 		https: httpsOptions,
-		port: 4001
+		port: process.env.PORT
 	},
 	() => console.log('server started on port https://localhost:4001')
 )
