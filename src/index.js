@@ -1,6 +1,6 @@
 const { GraphQLServer } = require('graphql-yoga')
 const cookieParser = require('cookie-parser')
-const cors = require('CORS')
+// const cors = require('CORS')
 const { prisma } = require('../generated/prisma-client')
 const fs = require('fs')
 require('dotenv').config()
@@ -18,7 +18,7 @@ const server = new GraphQLServer({
 })
 
 server.express.use(cookieParser())
-server.express.use(cors())
+// server.express.use(cors())
 
 // const httpsOptions = {
 // 	key: fs.readFileSync('./server.key'),
