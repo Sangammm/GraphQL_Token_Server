@@ -1,16 +1,16 @@
-const jwt = require("jsonwebtoken")
-require("dotenv").config()
+const jwt = require('jsonwebtoken')
+require('dotenv').config()
 const SECRET1 = process.env.SECRET1
 const SECRET2 = process.env.SECRET2
-const accessTokenExpiry = 1000 * 60 * 10 //20 minutes
+const accessTokenExpiry = 1000 * 60 * 60 * 1 //20 minutes
 const refreshTokenExpiery = 1000 * 60 * 60 * 24 * 1 // one day
-const accessTokenBefore = 1000 * 60 * 5
+const accessTokenBefore = 1000 * 60 * 60 * 0.5 // one hour
 
 async function createRefreshToken(ctx, id) {
 	try {
 		await ctx.prisma.updateManyTokens({ data: { deleted: true }, where: { userId: id, deleted: false } })
 		let Obj = await ctx.prisma.createToken({ userId: id })
-		console.log("OBJ", Obj)
+		console.log('OBJ', Obj)
 		return jwt.sign({ id: Obj.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
 	} catch (err) {
 		console.warn(err)
@@ -85,12 +85,19 @@ function isRefreshTokenExpired(token) {
 
 function validateReq(context) {
 	try {
-		let accessTokenArg = context.request.get("accessToken")
+		let accessTokenArg = context.request.get('accessToken')
 		let accessToken = isAccessTokenExpired(accessTokenArg)
 		console.log(11, accessToken)
+		let cookies = context.request.cookies
+		console.log(12, cookies.refreshToken)
 		if (accessToken.expired) {
-			// return accessToken
-			throw new Error("Token expired")
+			let refreshToken = isRefreshTokenExpired(cookies.refreshToken)
+			if (refreshToken.expired) {
+				throw new Error('Token Expired')
+			} else {
+				let newTokens = createAccessTokenFromRefreshToken(context, cookies.refreshToken)
+				return newTokens.accessToken
+			}
 		} else {
 			return accessToken
 		}

@@ -1,11 +1,11 @@
-const bcrypt = require("bcryptjs")
+const bcrypt = require('bcryptjs')
 const {
 	isRefreshTokenExpired,
 	createAccessTokenFromRefreshToken,
 	createAccessToken,
 	createRefreshToken
-} = require("../../utils")
-require("dotenv").config()
+} = require('../../utils')
+require('dotenv').config()
 
 async function signup(_, args, ctx) {
 	try {
@@ -17,6 +17,7 @@ async function signup(_, args, ctx) {
 		let data = await ctx.prisma.createUser({ ...obj })
 		const accessToken = createAccessToken(data.id)
 		const refreshToken = await createRefreshToken(ctx, data.id)
+		ctx.response.cookie('refreshToken', refreshToken, { expires: new Date(Date.now() + 900000), httpOnly: true })
 		return {
 			accessToken,
 			refreshToken,
@@ -32,15 +33,16 @@ async function login(_, args, ctx) {
 		const { email, password } = args.input
 		let data = await ctx.prisma.user({ email })
 		if (!data) {
-			return new Error("Looks like you are not registered please sign up")
+			return new Error('Looks like you are not registered please sign up')
 		}
 		let passwordSame = await bcrypt.compare(password, data.password)
 		if (!passwordSame) {
-			return new Error("Wrong Password")
+			return new Error('Wrong Password')
 		}
-		console.log(data.id)
 		const accessToken = createAccessToken(data.id)
-		const refreshToken = createRefreshToken(ctx, data.id)
+		const refreshToken = await createRefreshToken(ctx, data.id)
+		console.log(ctx.response.cookie.toString())
+		ctx.response.cookie('refreshToken', refreshToken, { expires: new Date(Date.now() + 900000), httpOnly: true })
 		return {
 			accessToken,
 			refreshToken,
@@ -57,7 +59,7 @@ async function askForNewTokens(_, args, ctx) {
 		// const { isRefreshTokenExpired, createAccessTokenFromRefreshToken } = utils
 		let data = isRefreshTokenExpired(input)
 		if (data.expired) {
-			return new Error("acess Token Expired Login Again")
+			return new Error('acess Token Expired Login Again')
 		} else {
 			let newTokens = await createAccessTokenFromRefreshToken(ctx, input)
 			// console.log(4, newTokens)
