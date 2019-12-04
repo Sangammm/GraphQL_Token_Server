@@ -39,6 +39,7 @@ type AuthData {
 type TokenInfo {
 	expired: Boolean!
 	sendNew: Boolean!
+	accessToken: String
 }
 
 type User {

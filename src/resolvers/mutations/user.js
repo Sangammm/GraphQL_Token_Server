@@ -1,10 +1,5 @@
 const bcrypt = require('bcryptjs')
-const {
-	isRefreshTokenExpired,
-	createAccessTokenFromRefreshToken,
-	createAccessToken,
-	createRefreshToken
-} = require('../../utils')
+const { createAccessToken, createRefreshToken, addRefreshToken } = require('../../utils')
 require('dotenv').config()
 
 async function signup(_, args, ctx) {
@@ -17,7 +12,7 @@ async function signup(_, args, ctx) {
 		let data = await ctx.prisma.createUser({ ...obj })
 		const accessToken = createAccessToken(data.id)
 		const refreshToken = await createRefreshToken(ctx, data.id)
-		ctx.response.cookie('refreshToken', refreshToken, { expires: new Date(Date.now() + 900000), httpOnly: true })
+		addRefreshToken(ctx, refreshToken)
 		return {
 			accessToken,
 			refreshToken,
@@ -41,8 +36,7 @@ async function login(_, args, ctx) {
 		}
 		const accessToken = createAccessToken(data.id)
 		const refreshToken = await createRefreshToken(ctx, data.id)
-		console.log(ctx.response.cookie.toString())
-		ctx.response.cookie('refreshToken', refreshToken, { expires: new Date(Date.now() + 900000), httpOnly: true })
+		addRefreshToken(ctx, refreshToken)
 		return {
 			accessToken,
 			refreshToken,
@@ -55,14 +49,14 @@ async function login(_, args, ctx) {
 
 async function askForNewTokens(_, args, ctx) {
 	try {
-		const { input } = args
-		// const { isRefreshTokenExpired, createAccessTokenFromRefreshToken } = utils
-		let data = isRefreshTokenExpired(input)
+		// const { input } = args
+		const { isRefreshTokenExpired, createAccessTokenFromRefreshToken } = utils
+		const { refreshToken } = ctx.request.response.cookie
+		let data = isRefreshTokenExpired(refreshToken)
 		if (data.expired) {
 			return new Error('acess Token Expired Login Again')
 		} else {
-			let newTokens = await createAccessTokenFromRefreshToken(ctx, input)
-			// console.log(4, newTokens)
+			let newTokens = await createAccessTokenFromRefreshToken(ctx, refreshToken)
 			return {
 				accessToken: newTokens.accessToken,
 				refreshToken: newTokens.refreshToken
