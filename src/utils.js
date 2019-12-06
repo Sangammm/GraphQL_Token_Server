@@ -17,6 +17,34 @@ async function createRefreshToken(ctx, id) {
 	}
 }
 
+async function validateReqMiddleware(resolve, root, args, context, info) {
+	console.count(11)
+	const accessTokenArg = context.request.get('accessToken')
+	const accessToken = isAccessTokenExpired(accessTokenArg)
+	const cookies = context.request.cookies
+	let TokenInfo = accessToken
+	// console.log('cookies: ', cookies)
+	if (accessToken.expired || accessToken.sendNew) {
+		let refreshToken = isRefreshTokenExpired(cookies.refreshToken)
+		console.log('refreshToken: ', refreshToken)
+		if (refreshToken.expired) {
+			throw new Error('Token Expired')
+		} else {
+			const newTokens = await createAccessTokenFromRefreshToken(context, cookies.refreshToken)
+			console.log(newTokens)
+			addRefreshToken(context, newTokens.refreshToken)
+			TokenInfo = {
+				sendNew: accessToken.sendNew,
+				expired: accessToken.expired,
+				accessToken: newTokens.accessToken
+			}
+		}
+	}
+	let result = await resolve(root, args, context, info)
+	console.log('result: ', result)
+	return { ...result, TokenInfo }
+}
+
 function createAccessToken(id) {
 	try {
 		return jwt.sign({ id, expiery: Date.now() + accessTokenExpiry }, SECRET1)
