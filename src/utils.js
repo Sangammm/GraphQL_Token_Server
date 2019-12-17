@@ -36,7 +36,7 @@ async function validateReqMiddleware(resolve, root, args, context, info) {
 			TokenInfo = {
 				sendNew: accessToken.sendNew,
 				expired: accessToken.expired,
-				accessToken: newTokens.accessToken
+				accessToken: newTokens.accessToken,
 			}
 		}
 	}
@@ -58,24 +58,27 @@ function isAccessTokenExpired(token, secretKey = SECRET1) {
 	try {
 		let Token = jwt.verify(token, secretKey)
 		console.log(new Date(Token.expiery).toLocaleString())
+		console.log('expire before->', (Token.expiery - Date.now()).toLocaleString())
+
 		if (Token.expiery < Date.now()) {
+			throw new Error('Token expired')
 			return {
 				id: Token.id,
 				expired: true,
-				sendNew: true
+				sendNew: true,
 			}
 		} else {
 			if (Token.expiery - Date.now() < accessTokenBefore) {
 				return {
 					id: Token.id,
 					expired: false,
-					sendNew: true
+					sendNew: true,
 				}
 			} else {
 				return {
 					id: Token.id,
 					expired: false,
-					sendNew: false
+					sendNew: false,
 				}
 			}
 		}
@@ -101,12 +104,12 @@ function isRefreshTokenExpired(token) {
 		if (Token.expiery < Date.now()) {
 			return {
 				id: Token.id,
-				expired: true
+				expired: true,
 			}
 		} else {
 			return {
 				id: Token.id,
-				expired: false
+				expired: false,
 			}
 		}
 	} catch (err) {
@@ -133,7 +136,7 @@ async function validateReq(context) {
 				return {
 					sendNew: accessToken.sendNew,
 					expired: accessToken.expired,
-					accessToken: newTokens.accessToken
+					accessToken: newTokens.accessToken,
 				}
 			}
 		} else {
@@ -148,7 +151,7 @@ async function validateReq(context) {
 function addRefreshToken(ctx, refreshToken) {
 	ctx.response.cookie('refreshToken', refreshToken, {
 		expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
-		httpOnly: true
+		httpOnly: true,
 	})
 }
 
@@ -159,5 +162,5 @@ module.exports = {
 	createAccessTokenFromRefreshToken,
 	isRefreshTokenExpired,
 	validateReq,
-	addRefreshToken
+	addRefreshToken,
 }

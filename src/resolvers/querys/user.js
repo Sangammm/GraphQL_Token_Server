@@ -5,9 +5,9 @@ async function users(_, args, ctx) {
 	let data = await ctx.prisma.users()
 	return {
 		users: data,
-		TokenInfo
+		TokenInfo,
 	}
 }
 module.exports = {
-	users
+	users,
 }

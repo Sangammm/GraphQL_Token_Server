@@ -16,10 +16,11 @@ async function signup(_, args, ctx) {
 		return {
 			accessToken,
 			refreshToken,
-			user: data
+			user: data,
 		}
 	} catch (err) {
 		console.warn(err)
+		throw new Error(err)
 	}
 }
 
@@ -40,10 +41,11 @@ async function login(_, args, ctx) {
 		return {
 			accessToken,
 			refreshToken,
-			user: data
+			user: data,
 		}
 	} catch (err) {
 		console.warn(err)
+		throw new Error(err)
 	}
 }
 
@@ -59,15 +61,16 @@ async function askForNewTokens(_, args, ctx) {
 			let newTokens = await createAccessTokenFromRefreshToken(ctx, refreshToken)
 			return {
 				accessToken: newTokens.accessToken,
-				refreshToken: newTokens.refreshToken
+				refreshToken: newTokens.refreshToken,
 			}
 		}
 	} catch (err) {
 		console.warn(err)
+		throw new Error(err)
 	}
 }
 module.exports = {
 	signup,
 	login,
-	askForNewTokens
+	askForNewTokens,
 }
