@@ -1,3 +1,5 @@
+const Server = require('graphql-yoga')
+// console.log(Server.GraphQLServer);
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 const SECRET1 = process.env.SECRET1
@@ -12,7 +14,6 @@ async function createRefreshToken(ctx, id) {
 		let Obj = await ctx.prisma.createToken({ userId: id })
 		return jwt.sign({ id: Obj.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
 	} catch (err) {
-		console.warn(err)
 		throw new Error(err)
 	}
 }
@@ -58,10 +59,7 @@ function isAccessTokenExpired(token, secretKey = SECRET1) {
 	try {
 		let Token = jwt.verify(token, secretKey)
 		console.log(new Date(Token.expiery).toLocaleString())
-		console.log('expire before->', (Token.expiery - Date.now()).toLocaleString())
-
 		if (Token.expiery < Date.now()) {
-			throw new Error('Token expired')
 			return {
 				id: Token.id,
 				expired: true,
@@ -84,7 +82,7 @@ function isAccessTokenExpired(token, secretKey = SECRET1) {
 		}
 	} catch (err) {
 		console.warn(err)
-		throw new Error(err)
+		throw new AuthenticationError('Invalid Token');
 	}
 }
 
@@ -94,7 +92,7 @@ async function createAccessTokenFromRefreshToken(ctx, token) {
 		return { accessToken: createAccessToken(Token.id), refreshToken: await createRefreshToken(ctx, Token.id) }
 	} catch (err) {
 		console.warn(err)
-		throw new Error(err)
+		throw new AuthenticationError(err)
 	}
 }
 
@@ -114,7 +112,7 @@ function isRefreshTokenExpired(token) {
 		}
 	} catch (err) {
 		console.warn(err)
-		throw new Error(err)
+		throw new AuthenticationError('Invalid Token');
 	}
 }
 
@@ -123,12 +121,11 @@ async function validateReq(context) {
 		let accessTokenArg = context.request.get('accessToken')
 		let accessToken = isAccessTokenExpired(accessTokenArg)
 		let cookies = context.request.cookies
-		// console.log('cookies: ', cookies)
 		if (accessToken.expired || accessToken.sendNew) {
 			let refreshToken = isRefreshTokenExpired(cookies.refreshToken)
-			console.log('refreshToken: ', refreshToken)
+			// console.log('refreshToken: ', refreshToken)
 			if (refreshToken.expired) {
-				throw new Error('Token Expired')
+				throw new AuthenticationError('Token Expired')
 			} else {
 				let newTokens = await createAccessTokenFromRefreshToken(context, cookies.refreshToken)
 				console.log(newTokens)
@@ -144,7 +141,7 @@ async function validateReq(context) {
 		}
 	} catch (err) {
 		console.warn(err)
-		throw new Error(err)
+		throw new AuthenticationError()
 	}
 }
 
