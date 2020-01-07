@@ -37,5 +37,10 @@ server.start(
 			origin: 'http://localhost:3000',
 		},
 	},
-	() => console.log('goto http://localhost:4001'),
+	() => {
+		const url = 'http://localhost:4001';
+		const start = (process.platform == 'darwin'? 'open': process.platform == 'win32'? 'start': 'xdg-open');
+		console.log(url);
+		// require('child_process').exec(start + ' ' + url);
+	},
 )

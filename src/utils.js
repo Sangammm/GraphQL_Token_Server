@@ -1,7 +1,7 @@
-const Server = require('graphql-yoga')
-// console.log(Server.GraphQLServer);
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
+const {AuthenticationError, UserInputError, ValidationError, } = require('apollo-server-errors')
+
 const SECRET1 = process.env.SECRET1
 const SECRET2 = process.env.SECRET2
 const accessTokenExpiry = 1000 * 60 * 60 * 1
@@ -14,7 +14,7 @@ async function createRefreshToken(ctx, id) {
 		let Obj = await ctx.prisma.createToken({ userId: id })
 		return jwt.sign({ id: Obj.id, expiery: Date.now() + refreshTokenExpiery }, SECRET2)
 	} catch (err) {
-		throw new Error(err)
+		new ApolloError('Data base Error', 'DB_ERROR');
 	}
 }
 
@@ -29,7 +29,7 @@ async function validateReqMiddleware(resolve, root, args, context, info) {
 		let refreshToken = isRefreshTokenExpired(cookies.refreshToken)
 		console.log('refreshToken: ', refreshToken)
 		if (refreshToken.expired) {
-			throw new Error('Token Expired')
+			throw new AuthenticationError('Tokens Expired')
 		} else {
 			const newTokens = await createAccessTokenFromRefreshToken(context, cookies.refreshToken)
 			console.log(newTokens)
@@ -92,7 +92,7 @@ async function createAccessTokenFromRefreshToken(ctx, token) {
 		return { accessToken: createAccessToken(Token.id), refreshToken: await createRefreshToken(ctx, Token.id) }
 	} catch (err) {
 		console.warn(err)
-		throw new AuthenticationError(err)
+		throw new AuthenticationError('Invalid Token')
 	}
 }
 
@@ -141,7 +141,7 @@ async function validateReq(context) {
 		}
 	} catch (err) {
 		console.warn(err)
-		throw new AuthenticationError()
+		throw new AuthenticationError('Invalid Token')
 	}
 }
 

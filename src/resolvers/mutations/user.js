@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs')
 const { createAccessToken, createRefreshToken, addRefreshToken } = require('../../utils')
+const {UserInputError, ValidationError,ApolloError } = require('apollo-server-errors')
 require('dotenv').config()
 
 async function signup(_, args, ctx) {
@@ -20,7 +21,7 @@ async function signup(_, args, ctx) {
 		}
 	} catch (err) {
 		console.warn(err)
-		throw new Error(err)
+		throw new UserInputError('WRONG_INPUT')
 	}
 }
 
@@ -29,11 +30,12 @@ async function login(_, args, ctx) {
 		const { email, password } = args.input
 		let data = await ctx.prisma.user({ email })
 		if (!data) {
-			return new Error('Looks like you are not registered please sign up')
+			new ApolloError('Your email id not exists please sign up', 'NO_EMAIL');
+
 		}
 		let passwordSame = await bcrypt.compare(password, data.password)
 		if (!passwordSame) {
-			return new Error('Wrong Password')
+			new ApolloError('Wrong password', 'WRONG_PASSWORD');
 		}
 		const accessToken = createAccessToken(data.id)
 		const refreshToken = await createRefreshToken(ctx, data.id)
